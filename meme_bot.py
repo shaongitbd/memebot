@@ -3,7 +3,6 @@ Meme Bot for Echoed (Zorium)
 Connects via Socket.IO, listens for !meme commands, generates memes via memegen.link
 """
 import os
-import re
 import random
 import time
 import socketio
@@ -21,6 +20,7 @@ MEMEGEN_API = 'https://api.memegen.link'
 # Populated at startup
 bot_id = None
 bot_name = None
+bot_username = None
 
 # --- memegen.link helpers ---
 
@@ -142,14 +142,13 @@ def send_message(server_id: str, channel_id: str, content: str):
 def cmd_help(server_id: str, channel_id: str, _args: str):
     msg = (
         "**Meme Bot Commands**\n"
+        "`!meme` - Random meme\n"
         "`!meme help` - Show this help message\n"
         "`!meme generate <template> <top> | <bottom>` - Generate a meme\n"
         "`!meme templates` - List popular meme templates\n"
         "`!meme search <query>` - Search templates by name\n"
-        "`!meme random` - Random meme from template list\n"
         "`!meme random <top> | <bottom>` - Random template with custom text\n"
-        "`!meme preview <template>` - Show blank template preview\n"
-        "\nExample: `!meme generate drake \"using API keys\" | \"using free APIs\"`"
+        "`!meme preview <template>` - Show blank template preview"
     )
     send_message(server_id, channel_id, msg)
 
@@ -193,8 +192,7 @@ def cmd_generate(server_id: str, channel_id: str, args: str):
     args = args.strip()
     if not args:
         send_message(server_id, channel_id,
-                     "Usage: `!meme generate <template> <top> | <bottom>`\n"
-                     "Example: `!meme generate drake \"coding all night\" | \"sleeping\"`")
+                     "Usage: `!meme generate <template> <top> | <bottom>`")
         return
 
     # Split: first word is template, rest is text
@@ -226,7 +224,7 @@ def cmd_random(server_id: str, channel_id: str, args: str):
         bottom = example.get('text', ['', ''])[1] if example.get('text') and len(example.get('text', [])) > 1 else ''
 
     url = build_meme_url(tid, top, bottom)
-    send_message(server_id, channel_id, f"**{t.get('name', tid)}**\n{url}")
+    send_message(server_id, channel_id, url)
 
 
 def cmd_preview(server_id: str, channel_id: str, args: str):
@@ -252,7 +250,7 @@ def handle_command(server_id: str, channel_id: str, text: str):
     """Parse and dispatch a meme command."""
     text = text.strip()
     if not text:
-        cmd_help(server_id, channel_id, '')
+        cmd_random(server_id, channel_id, '')
         return
 
     parts = text.split(None, 1)
@@ -291,7 +289,7 @@ def disconnect():
 @sio.on('authenticated')
 def on_authenticated(data):
     """Socket server responds with: { success: bool, user: { id, name, avatarUrl, isBot } }"""
-    global bot_id, bot_name
+    global bot_id, bot_name, bot_username
     if data.get('success'):
         user = data.get('user', {})
         # Update bot_id/bot_name from socket auth response (authoritative source)
@@ -351,13 +349,10 @@ def on_message_event(data):
         handle_command(server_id, channel_id, cmd_text)
         return
 
-    # Check for @mention (bot_id in mentions array or content)
-    mentions = msg.get('mentions', [])
-    mentioned = bot_id and (bot_id in mentions or f'<@{bot_id}>' in content)
+    # Check for @username mention (frontend uses @username format)
+    mentioned = bot_username and f'@{bot_username}' in content
     if mentioned:
-        # Strip the mention and treat the rest as a command
-        cleaned = re.sub(rf'<@{re.escape(bot_id)}>', '', content).strip()
-        handle_command(server_id, channel_id, cleaned)
+        cmd_help(server_id, channel_id, '')
 
 
 def subscribe_all():
@@ -399,7 +394,7 @@ def subscribe_all():
 
 
 def main():
-    global bot_id, bot_name
+    global bot_id, bot_name, bot_username
 
     if not BOT_API_KEY:
         print('[MemeBot] ERROR: BOT_API_KEY not set. Copy .env.example to .env and set your key.')
@@ -414,11 +409,12 @@ def main():
     bot_id = result.get('bot_id')
     print(f'[MemeBot] Token valid. Bot ID: {bot_id}')
 
-    # Get bot name from profile
+    # Get bot profile (name + username)
     profile = api_get('/profile')
     if profile:
         bot_name = profile.get('name', 'MemeBot')
-        print(f'[MemeBot] Bot name: {bot_name}')
+        bot_username = profile.get('username', '')
+        print(f'[MemeBot] Bot name: {bot_name}, username: {bot_username}')
 
     # Pre-fetch templates
     templates = fetch_templates()
