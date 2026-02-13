@@ -6,7 +6,6 @@ import os
 import re
 import random
 import time
-import threading
 import socketio
 import requests
 from dotenv import load_dotenv
@@ -291,10 +290,16 @@ def disconnect():
 
 @sio.on('authenticated')
 def on_authenticated(data):
+    """Socket server responds with: { success: bool, user: { id, name, avatarUrl, isBot } }"""
+    global bot_id, bot_name
     if data.get('success'):
-        info = data.get('bot') or data.get('user', {})
-        print(f'[MemeBot] Authenticated as {info.get("name", "?")} ({info.get("id", "?")})')
-        # Subscribe to all servers and channels
+        user = data.get('user', {})
+        # Update bot_id/bot_name from socket auth response (authoritative source)
+        if user.get('id'):
+            bot_id = user['id']
+        if user.get('name'):
+            bot_name = user['name']
+        print(f'[MemeBot] Authenticated as {user.get("name", "?")} ({user.get("id", "?")})')
         subscribe_all()
     else:
         print(f'[MemeBot] Auth failed: {data.get("message")}')
@@ -307,10 +312,23 @@ def on_error(data):
 
 @sio.on('messageEvent')
 def on_message_event(data):
-    """Handle incoming message events."""
+    """Handle incoming message events.
+
+    Payload from socket server (event-handler.js handleMessageEvent):
+    {
+      type: "message:created" | "message:updated" | "message:deleted",
+      data: {
+        id, channelId, senderId, content, serverId,
+        isDirect, isEdited, attachments, mentions,
+        replyToId, messageType ("user"|"bot"|"system"),
+        createdAt, updatedAt,
+        author: { id, name, username, avatarUrl }
+      }
+    }
+    """
     event_type = data.get('type', '')
-    if event_type not in ('new_message', 'message_created', ''):
-        return  # Only handle new messages
+    if event_type != 'message:created':
+        return
 
     msg = data.get('data', data)
     content = msg.get('content', '')
@@ -318,29 +336,27 @@ def on_message_event(data):
     channel_id = msg.get('channelId', '')
     server_id = msg.get('serverId', '')
 
-    # Ignore own messages
+    # Ignore own messages — only check senderId, NOT messageType
+    # (messageType='bot' would filter ALL bots, we only want to skip ourselves)
     if sender_id == bot_id:
         return
 
-    # Skip DMs for now
+    # Skip DMs
     if msg.get('isDirect'):
         return
 
     # Check for !meme prefix
     if content.startswith('!meme'):
-        cmd_text = content[5:].strip()  # strip "!meme"
+        cmd_text = content[5:].strip()
         handle_command(server_id, channel_id, cmd_text)
         return
 
-    # Check for @mention (bot_id in content or mentions array)
+    # Check for @mention (bot_id in mentions array or content)
     mentions = msg.get('mentions', [])
-    mentioned = bot_id and (bot_id in mentions or f'@{bot_name}' in content or f'<@{bot_id}>' in content)
+    mentioned = bot_id and (bot_id in mentions or f'<@{bot_id}>' in content)
     if mentioned:
         # Strip the mention and treat the rest as a command
-        cleaned = content
-        cleaned = re.sub(rf'<@{re.escape(bot_id)}>', '', cleaned) if bot_id else cleaned
-        cleaned = re.sub(rf'@{re.escape(bot_name)}', '', cleaned, flags=re.IGNORECASE) if bot_name else cleaned
-        cleaned = cleaned.strip()
+        cleaned = re.sub(rf'<@{re.escape(bot_id)}>', '', content).strip()
         handle_command(server_id, channel_id, cleaned)
 
 
