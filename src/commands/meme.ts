@@ -9,7 +9,10 @@ const MAX_PICK_ATTEMPTS = 5;
 
 function formatCaption(meme: Meme): string {
   const stats = meme.ups ? ` · ⬆ ${meme.ups.toLocaleString()}` : '';
-  return `**${meme.title}**\nr/${meme.subreddit}${stats} · ${meme.postLink}`;
+  // Deliberately omit postLink — Echoed's async unfurl would otherwise create
+  // a second Reddit embed alongside the attached image. Title + subreddit +
+  // score is enough context for chat.
+  return `**${meme.title}**\nr/${meme.subreddit}${stats}`;
 }
 
 export const handleMeme: Handler = async (ctx, { api, memes, seen }) => {
