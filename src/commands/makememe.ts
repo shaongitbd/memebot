@@ -28,11 +28,8 @@ export const handleMakeMeme: Handler = async (ctx, { api }) => {
   }
 
   let templateId: string;
-  let templateName: string;
   if (templateArg === 'random') {
-    const picked = pickRandomCurated();
-    templateId = picked.id;
-    templateName = picked.name;
+    templateId = pickRandomCurated().id;
   } else {
     const template = await findTemplate(templateArg);
     if (!template) {
@@ -45,7 +42,6 @@ export const handleMakeMeme: Handler = async (ctx, { api }) => {
       return;
     }
     templateId = template.id;
-    templateName = template.name;
   }
 
   const captionRaw = ctx.args.slice(1).join(' ').trim();
@@ -57,14 +53,13 @@ export const handleMakeMeme: Handler = async (ctx, { api }) => {
     : [];
 
   const url = buildMemeUrl({ templateId, lines });
-  const caption = templateArg === 'random' ? `🎲 _${templateName}_` : '';
 
   await deliverImage({
     api,
     serverId: ctx.serverId,
     channelId: ctx.channelId,
     imageUrl: url,
-    caption,
+    caption: '',
     fallbackFilenameBase: templateId,
   });
 };

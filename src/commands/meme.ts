@@ -7,14 +7,6 @@ import type { Meme } from '../types.js';
 // dominated by NSFW or already-seen entries.
 const MAX_PICK_ATTEMPTS = 5;
 
-function formatCaption(meme: Meme): string {
-  const stats = meme.ups ? ` · ⬆ ${meme.ups.toLocaleString()}` : '';
-  // Deliberately omit postLink — Echoed's async unfurl would otherwise create
-  // a second Reddit embed alongside the attached image. Title + subreddit +
-  // score is enough context for chat.
-  return `**${meme.title}**\nr/${meme.subreddit}${stats}`;
-}
-
 export const handleMeme: Handler = async (ctx, { api, memes, seen }) => {
   const requested = ctx.args[0]?.toLowerCase();
   if (requested && !config.allowedSubreddits.has(requested)) {
@@ -52,7 +44,7 @@ export const handleMeme: Handler = async (ctx, { api, memes, seen }) => {
     serverId: ctx.serverId,
     channelId: ctx.channelId,
     imageUrl: picked.url,
-    caption: formatCaption(picked),
+    caption: '',
     fallbackFilenameBase: `reddit-${picked.subreddit}`,
   });
 };

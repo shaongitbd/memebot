@@ -45,13 +45,12 @@ export const handleMemes: Handler = async (ctx, { api, memes, seen }) => {
   // Each post is download + upload + send (3 HTTP calls). Staggering keeps us
   // under Echoed's 20-req/min budget and avoids dumping all 5 at once.
   for (const m of picked) {
-    const stats = m.ups ? ` · ⬆ ${m.ups.toLocaleString()}` : '';
     await deliverImage({
       api,
       serverId: ctx.serverId,
       channelId: ctx.channelId,
       imageUrl: m.url,
-      caption: `**${m.title}**\nr/${m.subreddit}${stats}`,
+      caption: '',
       fallbackFilenameBase: `reddit-${m.subreddit}`,
     });
     await new Promise((r) => setTimeout(r, INTER_MESSAGE_DELAY_MS));
