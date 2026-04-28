@@ -1,7 +1,7 @@
 import { io, type Socket } from 'socket.io-client';
 import { config } from '../config.js';
 import { log } from '../log.js';
-import type { MessageCreatedData, MessageEventEnvelope } from '../types.js';
+import type { MessageCreatedData } from '../types.js';
 
 type MessageHandler = (data: MessageCreatedData) => void | Promise<void>;
 
@@ -59,11 +59,15 @@ export class EchoedSocket {
       },
     );
 
-    socket.on('messageEvent', (envelope: MessageEventEnvelope) => {
-      if (!envelope || envelope.type !== 'message:created' || !envelope.data) return;
+    // Echoed's socket server emits each event under its mapped UPPER_SNAKE
+    // name (see EVENT_NAME_MAP). For new messages that's MESSAGE_CREATE, with
+    // the message data passed as the bare payload (not wrapped in a
+    // {type, data} envelope).
+    socket.on('MESSAGE_CREATE', (data: MessageCreatedData) => {
+      if (!data || !data.id) return;
       // Skip our own messages — would loop forever otherwise.
-      if (this.botUserId && envelope.data.senderId === this.botUserId) return;
-      Promise.resolve(this.messageHandler?.(envelope.data)).catch((err) => {
+      if (this.botUserId && data.senderId === this.botUserId) return;
+      Promise.resolve(this.messageHandler?.(data)).catch((err) => {
         log.error({ err }, 'Message handler threw');
       });
     });

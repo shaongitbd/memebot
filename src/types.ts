@@ -11,7 +11,8 @@ export interface Meme {
   ups: number;
 }
 
-// Universal envelope shape for Echoed Socket.IO events: { type, data }.
+// Bare payload Echoed's socket server emits on the MESSAGE_CREATE event.
+// (Not enveloped — the type discriminator is the event name itself.)
 export interface MessageCreatedData {
   id: string;
   channelId: string;
@@ -21,11 +22,6 @@ export interface MessageCreatedData {
   messageType: string;
   createdAt: string;
   author?: { id: string; name: string; avatarUrl?: string | null };
-}
-
-export interface MessageEventEnvelope {
-  type: string;
-  data: MessageCreatedData;
 }
 
 // What command handlers receive after dispatch parses the message.
