@@ -122,20 +122,19 @@ export function buildMemeUrl({ templateId, lines, extension = 'png' }: BuildMeme
   return `${MEMEGEN_BASE}/images/${templateId}/${segments.join('/')}.${extension}`;
 }
 
-// Curated short-list shown by !memetemplates and used as the catalog the LLM
-// picks from in !aimeme. IDs match memegen.link's canonical template IDs.
+// Curated short-list shown by !memetemplates. IDs and line counts verified
+// directly against memegen.link's /templates/<id> endpoint. The handler
+// re-validates against the live catalog at runtime, so a stale entry surfaces
+// as a "template not found" reply rather than a broken image render.
 export interface CuratedTemplate {
   id: string;
   name: string;
-  lines: 1 | 2;
+  lines: number;
   description: string;
 }
 
-// IDs verified against memegen.link's canonical template list. The handler
-// validates against the live /templates response too, so a typo here surfaces
-// as a "template not found" reply rather than a broken image embed.
 export const CURATED: readonly CuratedTemplate[] = [
-  { id: 'drake', name: 'Drake Hotline Bling', lines: 2, description: 'reject (top) / approve (bottom)' },
+  { id: 'drake', name: 'Drakeposting', lines: 2, description: 'reject (top) / approve (bottom)' },
   { id: 'fine', name: 'This Is Fine', lines: 2, description: 'denial in a burning room' },
   { id: 'cmm', name: 'Change My Mind', lines: 1, description: 'sign on a table; provocative claim' },
   { id: 'fry', name: 'Futurama Fry', lines: 2, description: '"not sure if X — or Y"' },
@@ -146,31 +145,32 @@ export const CURATED: readonly CuratedTemplate[] = [
   { id: 'aag', name: 'Ancient Aliens', lines: 2, description: 'wild claim with conspiracy energy' },
   { id: 'doge', name: 'Doge', lines: 2, description: '"such X. very Y. wow."' },
   { id: 'buzz', name: 'Buzz Lightyear', lines: 2, description: '"X, X everywhere"' },
-  { id: 'ebw', name: 'Expanding Brain', lines: 2, description: 'galaxy-brained progression of takes' },
-  { id: 'mocking', name: 'Mocking SpongeBob', lines: 1, description: 'AlTeRnAtInG cAsE quote' },
+  { id: 'gb', name: 'Galaxy Brain', lines: 4, description: 'progressively galaxy-brained takes' },
+  { id: 'spongebob', name: 'Mocking SpongeBob', lines: 2, description: 'AlTeRnAtInG cAsE quote' },
   { id: 'philosoraptor', name: 'Philosoraptor', lines: 2, description: 'pseudo-deep question' },
-  { id: 'spikachu', name: 'Surprised Pikachu', lines: 2, description: 'shock at predictable outcome' },
   { id: 'mordor', name: 'One Does Not Simply', lines: 2, description: '"one does not simply X"' },
   { id: 'yuno', name: 'Y U No Guy', lines: 2, description: 'frustrated demand: "Y U NO X"' },
-  { id: 'wyac', name: 'Woman Yelling at Cat', lines: 2, description: 'angry accusation / smug reply' },
+  { id: 'woman-cat', name: 'Woman Yelling at a Cat', lines: 2, description: 'angry accusation / smug reply' },
   { id: 'harold', name: 'Hide The Pain Harold', lines: 2, description: 'forced smile through suffering' },
-  { id: 'stonks', name: 'Stonks', lines: 1, description: 'questionable financial decision' },
+  { id: 'stonks', name: 'Stonks', lines: 2, description: 'questionable financial decision' },
+  { id: 'disastergirl', name: 'Disaster Girl', lines: 2, description: 'smirking child, fire behind' },
 ];
 
 // Friendly-name aliases so users can type either the canonical memegen ID or
 // the common name. Resolved by findTemplate before the live catalog lookup.
 export const ALIASES: Readonly<Record<string, string>> = {
   change: 'cmm',
-  brain: 'ebw',
-  expanding: 'ebw',
+  brain: 'gb',
+  expanding: 'gb',
+  galaxy: 'gb',
   picard: 'facepalm',
   firstworld: 'fwp',
-  spongebob: 'mocking',
+  mocking: 'spongebob',
   aliens: 'aag',
-  pikachu: 'spikachu',
-  surprised: 'spikachu',
   simply: 'mordor',
   pain: 'harold',
-  yelling: 'wyac',
-  cat: 'wyac',
+  yelling: 'woman-cat',
+  cat: 'woman-cat',
+  wyac: 'woman-cat',
+  disaster: 'disastergirl',
 };
