@@ -40,13 +40,13 @@ export const registry: readonly Registered[] = [
   },
   {
     name: 'memes',
-    aliases: ['memebatch'],
+    aliases: ['memebatch', 'batch'],
     handler: handleMemes,
     help: 'batch — `memes <count>` (1–5)',
   },
   {
     name: 'makememe',
-    aliases: ['gen', 'generate'],
+    aliases: ['gen', 'generate', 'caption'],
     handler: handleMakeMeme,
     help: 'generate — `makememe <template> <top> | <bottom>` (or `random`)',
   },
@@ -58,7 +58,7 @@ export const registry: readonly Registered[] = [
   },
   {
     name: 'memesearch',
-    aliases: ['searchmeme'],
+    aliases: ['searchmeme', 'search'],
     handler: handleMemeSearch,
     help: 'search the full memegen catalog — `memesearch <name>`',
   },
