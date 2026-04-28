@@ -1,0 +1,14 @@
+# Nixpacks build plan — pinned so deploys are reproducible.
+# Railway / Render / Coolify all consume this directly.
+
+[phases.setup]
+nixPkgs = ['nodejs_20']
+
+[phases.install]
+cmds = ['npm ci']
+
+[phases.build]
+cmds = ['npm run build']
+
+[start]
+cmd = 'node dist/index.js'
