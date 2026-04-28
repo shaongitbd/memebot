@@ -28,8 +28,11 @@ export const handleMakeMeme: Handler = async (ctx, { api }) => {
   }
 
   let templateId: string;
+  let templateLines: number;
   if (templateArg === 'random') {
-    templateId = pickRandomCurated().id;
+    const picked = pickRandomCurated();
+    templateId = picked.id;
+    templateLines = picked.lines;
   } else {
     const template = await findTemplate(templateArg);
     if (!template) {
@@ -42,15 +45,21 @@ export const handleMakeMeme: Handler = async (ctx, { api }) => {
       return;
     }
     templateId = template.id;
+    templateLines = template.lines;
   }
 
   const captionRaw = ctx.args.slice(1).join(' ').trim();
-  const lines = captionRaw
+  const userLines = captionRaw
     ? captionRaw
         .split('|')
         .map((s) => s.trim().slice(0, MAX_LINE_LENGTH))
         .slice(0, MAX_LINES)
     : [];
+
+  // memegen needs exactly templateLines slots — pad short input with empty
+  // strings, truncate over-long input. Empty input produces a blank preview.
+  const slotCount = Math.max(1, templateLines);
+  const lines = Array.from({ length: slotCount }, (_, i) => userLines[i] ?? '');
 
   const url = buildMemeUrl({ templateId, lines });
 

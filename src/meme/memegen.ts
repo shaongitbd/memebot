@@ -112,13 +112,13 @@ export interface BuildMemeOptions {
   extension?: 'png' | 'jpg' | 'gif' | 'webp';
 }
 
-// Build a memegen.link image URL. Empty `lines` returns a blank-template
-// preview; empty individual entries become "_" placeholders so the image still
-// renders without that caption.
+// Build a memegen.link image URL. memegen requires a slot per line the
+// template defines — too few or too many returns 404. Callers must pass the
+// right number of `lines` for the template; pad with empty strings if the
+// user only filled some of them.
 export function buildMemeUrl({ templateId, lines, extension = 'png' }: BuildMemeOptions): string {
-  const segments = lines.length === 0
-    ? ['_', '_']
-    : lines.map((line) => encodeMemeText(line));
+  const safe = lines.length > 0 ? lines : [''];
+  const segments = safe.map(encodeMemeText);
   return `${MEMEGEN_BASE}/images/${templateId}/${segments.join('/')}.${extension}`;
 }
 
