@@ -76,9 +76,14 @@ export class EchoedSocket {
       log.error({ err: err.message }, 'Socket connection error');
     });
 
-    // Periodic heartbeat keeps presence alive on the server side.
+    // Periodic heartbeat keeps presence alive on the server side. The token
+    // payload is required — Echoed's heartbeat handler runs validateToken on
+    // every call (TypeError if data is missing) and uses the result to refresh
+    // the bot's online state.
     this.heartbeatTimer = setInterval(() => {
-      if (socket.connected) socket.emit('heartbeat');
+      if (socket.connected) {
+        socket.emit('heartbeat', { botToken: config.botToken });
+      }
     }, HEARTBEAT_INTERVAL_MS);
   }
 
