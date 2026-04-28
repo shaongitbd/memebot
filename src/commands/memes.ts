@@ -1,5 +1,4 @@
 import { config } from '../config.js';
-import { deliverImage } from '../meme/delivery.js';
 import type { Handler } from './index.js';
 
 const MAX_BATCH = 5;
@@ -42,16 +41,13 @@ export const handleMemes: Handler = async (ctx, { api, memes, seen }) => {
 
   for (const m of picked) seen.markSeen(ctx.channelId, m.postLink);
 
-  // Each post is download + upload + send (3 HTTP calls). Staggering keeps us
-  // under Echoed's 20-req/min budget and avoids dumping all 5 at once.
+  // One sendMessage per post. Stagger keeps us under Echoed's 20-req/min
+  // budget and avoids dumping all 5 at once.
   for (const m of picked) {
-    await deliverImage({
-      api,
+    await api.sendMessage({
       serverId: ctx.serverId,
       channelId: ctx.channelId,
-      imageUrl: m.url,
-      caption: '',
-      fallbackFilenameBase: `reddit-${m.subreddit}`,
+      content: m.url,
     });
     await new Promise((r) => setTimeout(r, INTER_MESSAGE_DELAY_MS));
   }

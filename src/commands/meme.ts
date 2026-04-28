@@ -1,5 +1,4 @@
 import { config } from '../config.js';
-import { deliverImage } from '../meme/delivery.js';
 import type { Handler } from './index.js';
 import type { Meme } from '../types.js';
 
@@ -39,12 +38,12 @@ export const handleMeme: Handler = async (ctx, { api, memes, seen }) => {
   }
 
   seen.markSeen(ctx.channelId, picked.postLink);
-  await deliverImage({
-    api,
+  // Reddit-hosted image URLs (i.redd.it / i.imgur.com) unfurl reliably on
+  // Echoed, so we just post the URL — no need for the download+upload
+  // round-trip we use for memegen.link in !makememe.
+  await api.sendMessage({
     serverId: ctx.serverId,
     channelId: ctx.channelId,
-    imageUrl: picked.url,
-    caption: '',
-    fallbackFilenameBase: `reddit-${picked.subreddit}`,
+    content: picked.url,
   });
 };
